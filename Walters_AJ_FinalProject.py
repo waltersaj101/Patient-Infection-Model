@@ -13,8 +13,8 @@ k = 0.6                     # growth rate of immune cells, (per day)
 eta = 0.3                   # rate of bacteria destroyed by immune cells, (per day)
 omega = 1                   # carrying capacity of immune cells, ratio of bacteria present to immune cells (immune cells)
 T = 10**9                   # carrying capacity of bacteria, (bacteria)
-z = 1						# scaling factor for T-Cell therapy
-ab = np.zeros((3, 4))       # antibiotics, rows = anitbiotics, columns = name, alpha, d, delta, mu
+z = 2						# scaling factor for T-Cell therapy
+ab = np.zeros((3, 4))       # antibiotics, rows = antibiotics, columns = name, alpha, d, delta, mu
 ab[0][0] = 10**-6           # alphaBar, mutation rate of isonaizid (INH) antibiotic (mutations*generation)
 ab[0][1] = 0.0039           # dBar, elimination rate of sensitive bacteria due to INH (per day)
 ab[0][2] = 5                # delta, daily dose of INH (mg/(kg*day))
@@ -39,7 +39,7 @@ ai = Ai/(deltai/mui)
 """
 
 p = np.zeros((int(tf/dt)+1, 8))  	# mock patient, rows = time, columns = time (t), sensitive bacteria (s), resistant bacteria (r), immune cells (b), INH (a1), PZA (a2), RIF (a3)
-p[0][1] = nSens/T 					# sensitive bacteria (s)					
+p[0][1] = nSens/T 					# sensitive bacteria (s)
 p[0][2] = nRes/T 					# resistant bacteria (r)
 p[0][3] = nImm/(omega*T)			# immune cells (b)
 p[0][4] = cAB1/(ab[0][2]/ab[0][3])	# INH
@@ -58,16 +58,18 @@ for i in range(1, len(p)):	# Iterate through time
     # Calculate change in sensitive and resistant populations over time
     p[i][1] = p[i-1][1] + (betaS*p[i-1][1]*(1-(p[i-1][1]+p[i-1][2])) - eta*p[i-1][1]*p[i-1][3] - p[i-1][1]*deathSum)*dt
     p[i][2] = p[i-1][2] + (betaR*p[i-1][2]*(1-(p[i-1][1]+p[i-1][2])) - eta*p[i-1][2]*p[i-1][3] + p[i-1][1]*mutSum)*dt
+
+    # If you want to tune parameters, comment these out until the "Tunable parameters" block
     # Calculate change in immune cell population over time
     p[i][3] = p[i-1][3] + k*p[i-1][3]*(1-(p[i-1][3]/(p[i-1][1]+p[i-1][2])))*dt
-    # Calculate change in antibiotic concentration over time 
-    p[i][4] = p[i-1][4] + ab[0][3]*(1-p[i-1][4])*dt
-    p[i][5] = p[i-1][5] + ab[1][3]*(1-p[i-1][5])*dt
-    p[i][6] = p[i-1][6] + ab[2][3]*(1-p[i-1][6])*dt
+    # Calculate change in antibiotic concentration over time
+    p[i][4] = p[i-1][4] + ab[0][3]*(1-p[i-1][4])*dt # INH
+    p[i][5] = p[i-1][5] + ab[1][3]*(1-p[i-1][5])*dt # PZA
+    p[i][6] = p[i-1][6] + ab[2][3]*(1-p[i-1][6])*dt # RIF
     # Calculate total change in bacteria population over time
     p[i][7] = p[i][1] + p[i][2]
 
-    # Tunable Parameters:
+    # # Tunable Parameters. Uncomment below if you want to tune parameters
     # if p[i-1][0] < 75: # Change day for when T-Cell therapy is applied
     #     p[i][3] = p[i-1][3] + k*p[i-1][3]*(1-(p[i-1][3]/(p[i-1][1]+p[i-1][2])))*dt
     # else: # Apply on T-Cell therapy
@@ -82,11 +84,10 @@ for i in range(1, len(p)):	# Iterate through time
     #     p[i][6] = p[i-1][6] + ab[2][3]*(1-p[i-1][6])*dt
     # p[i][7] = p[i][1] + p[i][2]
 
-
-# np.savetxt("FinalProj.csv", p, fmt='%1.3f', header='Time(hr),s,r,b,INH,PZA', delimiter=',', comments='')
-
-# data = np.loadtxt('FinalProj.csv', delimiter=',', skiprows=1)                   # Import data from csv
 data = p
+# np.savetxt("FinalProj.csv", p, fmt='%1.3f', header='Time(hr),s,r,b,INH,PZA', delimiter=',', comments='')
+# data = np.loadtxt('FinalProj.csv', delimiter=',', skiprows=1)                   # Import data from csv
+
 ax = plt.subplot()
 line1 = ax.plot(data[:,0], data[:,1], c='green', label='sensitive bacteria')
 line2 = ax.plot(data[:,0], data[:,2], c='red', label='resistant bacteria')
